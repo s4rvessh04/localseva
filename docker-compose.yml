@@ -1,0 +1,85 @@
+services:
+  app:
+    build: .
+    develop:
+      watch:
+        - action: sync
+          path: ./
+          target: /app
+        - action: rebuild
+          path: ./Dockerfile
+    environment:
+      - PORT=8000
+      - OTEL_OTLP_ENDPOINT_TRACE=http://otel-collector:4318/v1/traces
+      - OTEL_OTLP_ENDPOINT_METRICS=http://otel-collector:4318/v1/metrics
+      - DATABASE_URL=postgresql://appuser:apppassword@db:5432/appdb
+    depends_on:
+      - otel-collector
+      - db
+    ports:
+      - "8000:8000"
+
+  db:
+    image: postgres:16.10-alpine3.21
+    container_name: postgres
+    restart: unless-stopped
+    # Removed network_mode: "host" - using default bridge network
+    environment:
+      POSTGRES_USER: appuser
+      POSTGRES_PASSWORD: apppassword
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel-collector
+    volumes:
+      - ./collector-config.yml:/etc/otelcol/config.yaml:ro
+    command: ["--config=/etc/otelcol/config.yaml"]
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus metrics
+
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    depends_on:
+      - otel-collector
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.46
+    container_name: jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14250:14250"  # Jaeger gRPC
+      # Removed conflicting ports 4317 and 4318
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+      - jaeger
+
+volumes:
+  postgres-data:
+  grafana-data:
