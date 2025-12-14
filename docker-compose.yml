@@ -60,6 +60,10 @@ services:
     container_name: jaeger
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
+      JAEGER_STORAGE_METRICS_STORAGE_TYPE: "prometheus"
+      JAEGER_PROMETHEUS_ENDPOINT: "http://prometheus:9090"
+      JAEGER_UI_MONITOR_MENU_ENABLED: "true"
+      METRICS_HTTP_PORT: "8889"
     ports:
       - "16686:16686"  # Jaeger UI
       - "14250:14250"  # Jaeger gRPC

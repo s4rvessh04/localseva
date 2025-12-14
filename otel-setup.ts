@@ -41,9 +41,6 @@ const metricReader = new PeriodicExportingMetricReader({
   exportIntervalMillis: 5000,
 });
 
-// Add console exporter for debugging
-const consoleExporter = new ConsoleSpanExporter();
-
 // SDK with multiple exporters for debugging
 export const sdk = new NodeSDK({
   resource,

@@ -10,6 +10,9 @@ processors:
   batch:
     timeout: 10s
 
+connectors:
+  spanmetrics:
+
 exporters:
   # For traces to Jaeger
   otlp/jaeger:
@@ -22,22 +25,27 @@ exporters:
     endpoint: "0.0.0.0:8889"
 
   # Debug exporter (optional, for troubleshooting)
-  # debug:
-  #   verbosity: detailed
+  debug:
+    verbosity: detailed
+
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp/jaeger, debug]
+      exporters: [otlp/jaeger, debug, spanmetrics]
 
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, spanmetrics]
       processors: [batch]
       exporters: [prometheus]
 
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/loki, debug]
+      exporters: [debug]
+ 
+    metrics/spanmetrics:
+      receivers: [spanmetrics]
+      exporters: [prometheus]
