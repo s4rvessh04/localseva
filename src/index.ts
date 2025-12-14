@@ -14,6 +14,8 @@ import { config } from "../config/config.js";
 import { pg, destroyDB } from "./db/knex.js";
 import { successHandler, errorHandler } from "./modules/middlewares/responseHandlers.js";
 
+import "../src/events/listeners/register.listeners.js";
+
 const app = new Hono()
 
 app.use('*', requestId())
